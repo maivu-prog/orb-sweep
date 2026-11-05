@@ -121,7 +121,15 @@ var T = THREE;
        reaches the rim, but the cup goes shallow and the bot's rim sweep dropped to 6/8.
      - softening PUSH 1.35 -> 1.0 so orbs ride the blade instead of squirting off it:
        identical on both gates, and it would have moved a balance number for nothing. */
-var ARENA_R = 11, PIT_R = 2.6, BLADE_R = 3.0, SPREAD = 1.70, NSEG = 17, SEGR = 0.52;
+/* Lan 6 (05/11 chieu): chi Mai quay video - cao di doc mep day ca dong bi TO truot doc tuong,
+   khong lot vao cup. Chi chon huong "cao to hon / sau hon", giu nguyen luat xoay theo huong chay.
+   Do bang rimTest(true) (8 bi 0.9*RMAX nam sat tuong, bot cao tung qua):
+     R 3.0 / 1.70 (cu) -> 4/8 trong 68 s   | R 3.0 / 2.3 -> 4/8  | R 3.0 / 2.8 -> 8/8, 63 s
+     R 3.5 / 2.5 -> 8/8, 27 s | R 3.8 / 2.3 -> 8/8, 36 s | R 4.0 / 2.0 -> 6/8 | R 4.0 / 2.5 -> 7/8
+     R 4.0 / 2.2 -> 8/8, 15 s, bi nho van 8/8, carry 0  <= chon
+   NSEG 17 -> 29 cho khoang cach dot giu nhu cu (arc 5.1 -> 8.8 u). Va cham tinh giai tich theo
+   cung, NSEG chi la hinh. */
+var ARENA_R = 11, PIT_R = 2.6, BLADE_R = 4.0, SPREAD = 2.20, NSEG = 29, SEGR = 0.52;
 var R0 = 0.55, RMAX = 1.55;
 var ARC_LEN = SPREAD * BLADE_R;          /* 5.1 u of cutting edge (was 4.26 - chi: "nho qua") */
 var BLADE_MIN = PIT_R + 0.25, BLADE_MAX = ARENA_R - 0.05;
@@ -1177,16 +1185,19 @@ window.__feel = {
     }
     return { sunk: sunk, gathered: gathered, flung: flung, of: 5 };
   },
-  rimTest: function(){
+  /* big = true (lan 6, 05/11 chieu): bi TO (0.9*RMAX) nam sat tuong - chi Mai: "shape cua
+     sweep tool ko cao may cuc to o mep va day chung vao lo duoc". */
+  rimTest: function(big){
     startRound();
     S.spawnT = 1e9;
-    var i, j, N = 8, R = ARENA_R - R0;
+    var r0 = big ? RMAX * 0.9 : R0;
+    var i, j, N = 8, R = ARENA_R - r0;
     orbs.length = 0;
     for (i = 0; i < orbPool.length; i++) orbPool[i].visible = false;
     for (i = 0; i < N; i++) {
       var a = i / N * Math.PI * 2 + 0.3;
       var o = spawn("basic", Math.cos(a) * R, Math.sin(a) * R, 0);
-      o.grow = 1e9; o.age = 0; o.drop = 0; o.r = R0;      /* no death clock during the probe */
+      o.grow = 1e9; o.age = 1e9 * (r0 - R0) / (RMAX - R0); o.drop = 0; o.r = r0;   /* no death clock; age holds r at r0 */
     }
     blade.x = 0; blade.z = BLADE_MIN; blade.vx = blade.vz = 0;
     ptr.x = blade.x; ptr.z = blade.z; ptr.on = true;
